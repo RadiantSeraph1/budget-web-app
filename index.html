@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>2027 Salary Budget</title>
+<style>
+  :root { --bg:#f6f7f9; --card:#fff; --ink:#1c2430; --mute:#6b7685; --line:#e3e7ee; --accent:#1f6feb; --bad:#c62828; --ok:#2e7d32; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:15px/1.5 system-ui,sans-serif; background:var(--bg); color:var(--ink); }
+  main { max-width:880px; margin:0 auto; padding:20px 16px 48px; }
+  h1 { font-size:22px; margin:0 0 4px; }
+  h2 { font-size:16px; margin:0 0 12px; }
+  p.sub { margin:0 0 20px; color:var(--mute); }
+  section { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px; margin-bottom:16px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; }
+  label { display:block; font-size:13px; color:var(--mute); }
+  input { width:100%; padding:7px 8px; border:1px solid var(--line); border-radius:6px; font:inherit; color:var(--ink); background:#fff; }
+  table { width:100%; border-collapse:collapse; }
+  th, td { text-align:left; padding:6px 4px; border-bottom:1px solid var(--line); }
+  th { font-size:12px; color:var(--mute); font-weight:600; text-transform:uppercase; }
+  td.n, th.n { text-align:right; font-variant-numeric:tabular-nums; }
+  td input { text-align:right; max-width:130px; margin-left:auto; display:block; }
+  tr.total td { font-weight:700; border-bottom:0; }
+  .bar { display:flex; height:14px; border-radius:7px; overflow:hidden; background:var(--line); margin:8px 0 6px; }
+  .bar span { display:block; height:100%; }
+  .legend { display:flex; flex-wrap:wrap; gap:4px 14px; font-size:13px; color:var(--mute); }
+  .legend i { display:inline-block; width:10px; height:10px; border-radius:2px; margin-right:5px; }
+  .bad { color:var(--bad); } .ok { color:var(--ok); }
+  .note { font-size:13px; color:var(--mute); margin-top:10px; }
+  .banner { padding:10px 12px; border-radius:8px; margin-bottom:12px; background:#fdecea; color:var(--bad); }
+  button { font:inherit; padding:7px 12px; border:1px solid var(--line); border-radius:6px; background:#fff; cursor:pointer; }
+</style>
+</head>
+<body>
+<main>
+  <h1>2027 Salary Budget</h1>
+  <p class="sub">Monthly plan in GH₵ from a US$ gross salary. Edit any number; it saves in this browser.</p>
+
+  <section>
+    <h2>Salary</h2>
+    <div class="grid">
+      <label>Gross salary (US$ / month)<input id="gross" type="number" min="0" step="100"></label>
+      <label>Exchange rate (GH₵ per US$)<input id="fx" type="number" min="0" step="0.01"></label>
+      <label>Employee SSNIT (% of gross)<input id="ssnit" type="number" min="0" step="0.1"></label>
+      <label>PAYE (GH₵ / month)<input id="paye" type="number" min="0" step="10"></label>
+    </div>
+    <table style="margin-top:12px">
+      <tr><td>Gross (GH₵)</td><td class="n" id="grossGhs"></td></tr>
+      <tr><td>SSNIT</td><td class="n" id="ssnitAmt"></td></tr>
+      <tr><td>PAYE</td><td class="n" id="payeAmt"></td></tr>
+      <tr class="total"><td>Take-home</td><td class="n" id="net"></td></tr>
+    </table>
+    <p class="note">PAYE is an estimate carried over from the planning chat, not a computed 2027 figure. Confirm the tax bands and how a US$ salary is taxed before relying on it.</p>
+  </section>
+
+  <section>
+    <h2>Monthly allocation</h2>
+    <div id="alert"></div>
+    <table>
+      <thead><tr><th>Category</th><th class="n">Monthly (GH₵)</th><th class="n">Annual (GH₵)</th><th class="n">% of take-home</th></tr></thead>
+      <tbody id="rows"></tbody>
+      <tfoot>
+        <tr class="total"><td>Total allocated</td><td class="n" id="totM"></td><td class="n" id="totA"></td><td class="n" id="totP"></td></tr>
+        <tr class="total"><td>Unallocated</td><td class="n" id="left"></td><td class="n" id="leftA"></td><td></td></tr>
+      </tfoot>
+    </table>
+    <div class="bar" id="bar"></div>
+    <div class="legend" id="legend"></div>
+  </section>
+
+  <section>
+    <h2>Savings goals (per year)</h2>
+    <table id="goals"></table>
+    <p class="note">Before investment returns.</p>
+  </section>
+
+  <button id="reset">Reset to defaults</button>
+</main>
+
+<script>
+const KEY = 'budget-2027';
+const DEFAULTS = {
+  gross: 5000, fx: 11.64, ssnit: 5.5, paye: 15371,
+  items: [
+    { group: 'Housing',  name: 'Rent reserve (1-bed, annual advance)', amt: 4500, goal: true },
+    { group: 'Housing',  name: 'Electricity, water & internet', amt: 1500 },
+    { group: 'Living',   name: 'Food & groceries', amt: 3500 },
+    { group: 'Living',   name: 'Transport', amt: 1800 },
+    { group: 'Living',   name: 'Personal care & gym', amt: 1200 },
+    { group: 'Living',   name: 'Entertainment & dining', amt: 1200 },
+    { group: 'Family',   name: 'Parents & immediate family', amt: 4000 },
+    { group: 'Travel',   name: 'International travel fund', amt: 4000, goal: true },
+    { group: 'Savings',  name: 'Emergency fund', amt: 3500, goal: true },
+    { group: 'Savings',  name: 'Long-term investments', amt: 9000, goal: true },
+    { group: 'Savings',  name: 'Car fund', amt: 5000, goal: true },
+    { group: 'Other',    name: 'Medical & annual expenses', amt: 1000 },
+    { group: 'Other',    name: 'Cash buffer', amt: 428 },
+  ],
+};
+const COLORS = { Housing:'#1f6feb', Living:'#8957e5', Family:'#d29922', Travel:'#2da44e', Savings:'#cf222e', Other:'#6e7781' };
+
+let s = load();
+const $ = id => document.getElementById(id);
+const fmt = n => 'GH₵' + Math.round(n).toLocaleString('en-US');
+
+function load() {
+  try { return JSON.parse(localStorage.getItem(KEY)) || structuredClone(DEFAULTS); }
+  catch { return structuredClone(DEFAULTS); }
+}
+const save = () => localStorage.setItem(KEY, JSON.stringify(s));
+
+function render() {
+  const grossGhs = s.gross * s.fx;
+  const ssnit = grossGhs * s.ssnit / 100;
+  const net = grossGhs - ssnit - s.paye;
+  $('grossGhs').textContent = fmt(grossGhs);
+  $('ssnitAmt').textContent = '-' + fmt(ssnit);
+  $('payeAmt').textContent = '-' + fmt(s.paye);
+  $('net').textContent = fmt(net);
+
+  const total = s.items.reduce((a, i) => a + i.amt, 0);
+  const left = net - total;
+  $('totM').textContent = fmt(total);
+  $('totA').textContent = fmt(total * 12);
+  $('totP').textContent = net > 0 ? (total / net * 100).toFixed(1) + '%' : '–';
+  $('left').textContent = fmt(left);
+  $('left').className = 'n ' + (left < 0 ? 'bad' : 'ok');
+  $('leftA').textContent = fmt(left * 12);
+  $('alert').innerHTML = left < 0
+    ? `<div class="banner">Over budget by ${fmt(-left)} a month. Trim a category or the cash buffer.</div>` : '';
+
+  // rows (rebuild only when not typing in one, to keep focus)
+  const rows = $('rows');
+  if (!rows.children.length) {
+    let last = '';
+    s.items.forEach((it, idx) => {
+      if (it.group !== last) { rows.insertAdjacentHTML('beforeend', `<tr><td colspan="4"><b>${it.group}</b></td></tr>`); last = it.group; }
+      rows.insertAdjacentHTML('beforeend',
+        `<tr><td>${it.name}</td><td><input type="number" min="0" step="100" data-i="${idx}" value="${it.amt}"></td>` +
+        `<td class="n" id="a${idx}"></td><td class="n" id="p${idx}"></td></tr>`);
+    });
+  }
+  s.items.forEach((it, idx) => {
+    $('a' + idx).textContent = fmt(it.amt * 12);
+    $('p' + idx).textContent = net > 0 ? (it.amt / net * 100).toFixed(1) + '%' : '–';
+  });
+
+  const groups = {};
+  s.items.forEach(i => groups[i.group] = (groups[i.group] || 0) + i.amt);
+  const denom = Math.max(net, total) || 1;
+  $('bar').innerHTML = Object.entries(groups)
+    .map(([g, v]) => `<span style="width:${v / denom * 100}%;background:${COLORS[g]}" title="${g}"></span>`).join('');
+  $('legend').innerHTML = Object.entries(groups)
+    .map(([g, v]) => `<span><i style="background:${COLORS[g]}"></i>${g} ${fmt(v)}</span>`).join('');
+
+  const goals = s.items.filter(i => i.goal);
+  $('goals').innerHTML = goals.map(g => `<tr><td>${g.name}</td><td class="n">${fmt(g.amt * 12)}</td></tr>`).join('') +
+    `<tr class="total"><td>Total earmarked</td><td class="n">${fmt(goals.reduce((a, g) => a + g.amt * 12, 0))}</td></tr>`;
+}
+
+for (const k of ['gross', 'fx', 'ssnit', 'paye']) {
+  $(k).value = s[k];
+  $(k).addEventListener('input', e => { s[k] = +e.target.value || 0; save(); render(); });
+}
+$('rows').addEventListener('input', e => {
+  if (e.target.dataset.i == null) return;
+  s.items[e.target.dataset.i].amt = +e.target.value || 0; save(); render();
+});
+$('reset').addEventListener('click', () => { localStorage.removeItem(KEY); location.reload(); });
+render();
+</script>
+</body>
+</html>

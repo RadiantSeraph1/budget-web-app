@@ -2,34 +2,39 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1b212a" media="(prefers-color-scheme: dark)">
 <title>2027 Personal Finance Planner</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <header>
   <div class="top">
-    <h1>2027 Personal Finance Planner</h1>
-    <div class="tools">
-      <select id="scenarioSel" title="Active scenario"></select>
-      <label style="display:flex;gap:4px;align-items:center">Show <select id="currency"><option value="GHS">GH₵</option><option value="USD">US$</option></select></label>
-      <button id="theme" title="Switch light / dark">Theme: auto</button>
-      <button id="exportCsv">Export CSV</button>
-      <button id="print">Print / PDF</button>
+    <h1>2027 Finance Planner</h1>
+    <div class="quick">
+      <select id="currency" aria-label="Show amounts in"><option value="GHS">GH₵</option><option value="USD">US$</option></select>
+      <button id="menuBtn" aria-expanded="false" aria-controls="tools" aria-label="Settings and export">⚙ Menu</button>
     </div>
   </div>
-  <nav id="tabs">
-    <button data-tab="income">Income &amp; tax</button>
-    <button data-tab="budget">Budget</button>
-    <button data-tab="invest">Investments</button>
-    <button data-tab="carfund">Car fund</button>
-    <button data-tab="car">Car affordability</button>
-    <button data-tab="fi">Independence</button>
-    <button data-tab="networth">Net worth</button>
-    <button data-tab="actuals">Actuals</button>
-    <button data-tab="scenarios">Scenarios</button>
-  </nav>
+  <div class="tools" id="tools">
+    <label>Scenario <select id="scenarioSel" title="Active scenario"></select></label>
+    <button id="theme" title="Switch light / dark">Theme: auto</button>
+    <button id="exportCsv">Export CSV</button>
+    <button id="print">Print / PDF</button>
+  </div>
 </header>
+<nav id="tabs" aria-label="Sections">
+  <button data-tab="income">Income &amp; tax</button>
+  <button data-tab="budget">Budget</button>
+  <button data-tab="invest">Investments</button>
+  <button data-tab="carfund">Car fund</button>
+  <button data-tab="car">Car affordability</button>
+  <button data-tab="fi">Independence</button>
+  <button data-tab="networth">Net worth</button>
+  <button data-tab="actuals">Actuals</button>
+  <button data-tab="scenarios">Scenarios</button>
+</nav>
 
 <main>
   <p class="sub" id="scenarioLine"></p>
@@ -58,6 +63,7 @@
       <tbody id="budgetRows"></tbody>
       <tfoot id="budgetFoot"></tfoot>
     </table>
+    <div class="sticky-sum" id="stickySum"></div>
     <div class="budgetviz" id="budgetViz"></div>
     <p class="note">Rows marked <em>save</em> build wealth or goal funds; the rest is spending. The cash buffer is whatever take-home is left after every row.</p>
   </section>

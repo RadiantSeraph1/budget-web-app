@@ -16,25 +16,27 @@
   }
 
   // series: [{ name, color, dashed?, points: [[x, y], ...] }]; hline: { y, label }
+  // opt.w / opt.h set the drawing size in real pixels so text stays readable on narrow screens.
   function line(series, opt = {}) {
-    const w = 720, h = 250, L = 72, R = 12, T = 10, B = 26;
+    const w = opt.w || 720, h = opt.h || 250, R = 14, T = 10, B = 26;
     const fmtY = opt.fmtY || compact, fmtX = opt.fmtX || (x => x);
     const pts = series.flatMap(s => s.points);
     if (!pts.length) return '<p class="note">Nothing to chart yet.</p>';
     const xMin = Math.min(...pts.map(p => p[0])), xMax = Math.max(...pts.map(p => p[0]));
-    let yMax = Math.max(...pts.map(p => p[1]), opt.hline ? opt.hline.y : 0);
-    let yMin = Math.min(0, ...pts.map(p => p[1]));
-    yMax = niceMax(yMax);
+    let yMax = niceMax(Math.max(...pts.map(p => p[1]), opt.hline ? opt.hline.y : 0));
+    const yMin = Math.min(0, ...pts.map(p => p[1]));
+    const yTicks = [0, 1, 2, 3, 4].map(i => yMin + (yMax - yMin) * i / 4);
+    const L = Math.max(34, Math.max(...yTicks.map(v => fmtY(v).length)) * 7.4 + 14);
     const X = x => L + (xMax === xMin ? 0 : (x - xMin) / (xMax - xMin)) * (w - L - R);
     const Y = y => T + (1 - (y - yMin) / (yMax - yMin || 1)) * (h - T - B);
     let g = '';
-    for (let i = 0; i <= 4; i++) {
-      const v = yMin + (yMax - yMin) * i / 4;
+    yTicks.forEach(v => {
       g += `<line class="grid" x1="${L}" x2="${w - R}" y1="${Y(v)}" y2="${Y(v)}"/><text class="tick" x="${L - 6}" y="${Y(v) + 4}" text-anchor="end">${esc(fmtY(v))}</text>`;
-    }
-    for (let i = 0; i <= 4; i++) {
-      const v = xMin + (xMax - xMin) * i / 4;
-      g += `<text class="tick" x="${X(v)}" y="${h - 8}" text-anchor="${i === 0 ? 'start' : i === 4 ? 'end' : 'middle'}">${esc(fmtX(v))}</text>`;
+    });
+    const nx = w < 440 ? 2 : 4;
+    for (let i = 0; i <= nx; i++) {
+      const v = xMin + (xMax - xMin) * i / nx;
+      g += `<text class="tick" x="${X(v)}" y="${h - 8}" text-anchor="${i === 0 ? 'start' : i === nx ? 'end' : 'middle'}">${esc(fmtX(v))}</text>`;
     }
     if (opt.hline) g += `<line x1="${L}" x2="${w - R}" y1="${Y(opt.hline.y)}" y2="${Y(opt.hline.y)}" stroke="var(--bad)" stroke-dasharray="5 4"/>` +
       `<text class="tick" x="${w - R}" y="${Y(opt.hline.y) - 4}" text-anchor="end" fill="var(--bad)">${esc(opt.hline.label)}</text>`;
@@ -45,7 +47,7 @@
       if (s.points.length <= 24) g += s.points.map(p => `<circle cx="${X(p[0])}" cy="${Y(p[1])}" r="2.8" fill="${s.color}"/>`).join('');
     });
     const legend = series.map(s => `<span><i style="background:${s.color}"></i>${esc(s.name)}</span>`).join('');
-    return `<svg class="chart" viewBox="0 0 ${w} ${h}" role="img" aria-label="${esc(opt.label || 'chart')}">${g}</svg><div class="legend">${legend}</div>`;
+    return `<svg class="chart" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" role="img" aria-label="${esc(opt.label || 'chart')}">${g}</svg><div class="legend">${legend}</div>`;
   }
 
   // slices: [{ name, color, value }]

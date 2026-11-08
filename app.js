@@ -79,6 +79,11 @@
   const isUsd = () => db.currency === 'USD';
   const money = n => isUsd() ? usd(n / s.fx) : ghs(n);        // results follow the currency switch
   const cv = n => isUsd() ? n / s.fx : n;                     // convert a GHS value for charting
+  // Charts are drawn at the real column width so their text stays readable on phones.
+  const chartSize = () => {
+    const w = Math.max(260, Math.min(720, document.querySelector('main').clientWidth - 48));
+    return { w, h: w < 480 ? 210 : 250 };
+  };
   const cfmt = v => Charts.compact(v, isUsd() ? 'US$' : 'GH₵');
   const pct = (n, d = 1) => num(n, d) + '%';
   const esc = x => String(x).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
@@ -124,6 +129,7 @@
     $('budgetAlert').innerHTML = left < 0
       ? `<div class="banner">Over budget by ${money(-left)} a month: your rows add up to more than your take-home of ${money(net)}. Trim a row.</div>`
       : `<div class="banner ok">Take-home of ${money(net)}: ${money(left)} a month is unallocated.</div>`;
+    $('stickySum').innerHTML = `<span class="pill">Cash buffer: ${tone(left >= 0, money(left))} / month</span>`;
     const groups = {};
     s.items.forEach(i => groups[i.group] = (groups[i.group] || 0) + i.amt);
     if (left > 0) groups.Unallocated = left;
@@ -149,7 +155,7 @@
     $('investChart').innerHTML = Charts.line([
       { name: 'Projected value', color: BLUE, points: pts },
       { name: 'Contributed', color: GREY, dashed: true, points: paid },
-    ], { fmtY: cfmt, fmtX: x => x + 'y', label: 'Investment growth' });
+    ], { ...chartSize(), fmtY: cfmt, fmtX: x => x + 'y', label: 'Investment growth' });
     $('investOut').innerHTML = `<table><thead><tr><th>After</th><th class="n">Contributed</th><th class="n">Projected value</th><th class="n">Growth</th></tr></thead><tbody>${
       [1, 3, 5, 10, 15, 20].map(y => {
         const v = Calc.fv(inv, s.returnPct / 100, y * 12), c = inv * y * 12;
@@ -171,7 +177,7 @@
     $('cfChart').innerHTML = Charts.line([
       { name: 'Car fund value', color: GREEN, points: [[0, cv(s.cf.existing)], ...cf.rows.map(r => [r.month, cv(r.total)])] },
       { name: 'Paid in', color: GREY, dashed: true, points: [[0, cv(s.cf.existing)], ...cf.rows.map(r => [r.month, cv(r.paidIn)])] },
-    ], { fmtY: cfmt, fmtX: x => 'M' + Math.round(x), hline: { y: cv(p.car.deposit), label: 'Deposit needed (section 5)' }, label: 'Car fund growth' });
+    ], { ...chartSize(), fmtY: cfmt, fmtX: x => 'M' + Math.round(x), hline: { y: cv(p.car.deposit), label: 'Deposit needed (section 5)' }, label: 'Car fund growth' });
     const scen = [['Conservative', 4.6, 0], ['Middle', 6, 1], ['Better outcome', 8, 2], ['Your inputs', s.cf.ghsRate, s.cf.usdRate]];
     $('cfScen').innerHTML = `<thead><tr><th>Scenario</th><th class="n">GHS return</th><th class="n">USD return</th><th class="n">Value</th><th></th></tr></thead><tbody>${
       scen.map(([n, g, u], i) => `<tr><td>${n}</td><td class="n">${g}%</td><td class="n">${u}%</td><td class="n">${money(p.cfFor([g, u]).total)}</td><td class="n">${
@@ -217,7 +223,7 @@
       { name: 'Portfolio (flat salary)', color: GREY, dashed: true, points: line(fi.flat, 'port', s.startPortfolio) },
       { name: 'Portfolio (with raises)', color: BLUE, points: line(fi.raises, 'port', s.startPortfolio) },
       { name: 'Target (with raises)', color: ORANGE, points: line(fi.raises, 'target', fi.target0) },
-    ], { fmtY: cfmt, fmtX: x => Math.round(x) + 'y', label: 'Path to financial independence, in today\'s money' });
+    ], { ...chartSize(), fmtY: cfmt, fmtX: x => Math.round(x) + 'y', label: 'Path to financial independence, in today\'s money' });
   }
 
   function renderNetWorth(p) {
@@ -251,7 +257,7 @@
       Charts.line([
         { name: 'Your net worth', color: BLUE, points: rows.map(r => [r.m, cv(r.nw)]) },
         { name: 'Plan (three pots)', color: GREY, dashed: true, points: planPts },
-      ], { fmtY: cfmt, fmtX: x => ymLabel(ymAdd(t.start, Math.round(x))), label: 'Net worth against plan' }) +
+      ], { ...chartSize(), fmtY: cfmt, fmtX: x => ymLabel(ymAdd(t.start, Math.round(x))), label: 'Net worth against plan' }) +
       `<table><thead><tr><th>Date</th><th class="n">Three pots</th><th class="n">Other</th><th class="n">Debts</th><th class="n">Net worth</th><th class="n">Plan (pots)</th><th class="n">Pots vs plan</th><th></th></tr></thead><tbody>${
         rows.map(r => `<tr><td>${dateLabel(r.date)}</td><td class="n">${money(r.pots)}</td><td class="n">${money(r.other)}</td><td class="n">${money(-r.debt)}</td><td class="n"><b>${money(r.nw)}</b></td><td class="n">${money(r.plan)}</td><td class="n">${tone(r.diff >= 0, money(r.diff))}</td><td class="n"><button class="small" data-delsnap="${r.i}">Delete</button></td></tr>`).join('')}</tbody></table>`;
   }
@@ -327,10 +333,24 @@
       cols[0].map((row, i) => `<tr><td>${row[0]}</td>${cols.map(c => `<td class="n">${c[i][1]}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
   }
 
+  // Label each cell with its column heading so tables can turn into cards on phones.
+  function labelTables() {
+    document.querySelectorAll('main table').forEach(t => {
+      const heads = [...t.querySelectorAll('thead th')].map(th => th.textContent.trim());
+      if (!heads.length) return;
+      t.classList.add('stack');
+      t.querySelectorAll('tr').forEach(tr => {
+        if (tr.parentNode.tagName === 'THEAD') return;
+        [...tr.children].forEach((td, i) => { if (heads[i]) td.dataset.label = heads[i]; });
+      });
+    });
+  }
+
   function render() {
     const p = Calc.plan(s);
     renderIncome(p); renderBudget(p); renderInvest(p); renderCarFund(p); renderCar(p);
     renderFi(p); renderNetWorth(p); renderActuals(p); renderScenarios();
+    labelTables();
     $('currency').value = db.currency;
     $('theme').textContent = 'Theme: ' + db.theme;
     document.querySelectorAll('[data-k]').forEach(el => {
@@ -366,6 +386,8 @@
     document.querySelectorAll('main section').forEach(sec => sec.classList.toggle('on', sec.id === id));
     document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === id));
     history.replaceState(null, '', '#' + id);
+    const nav = $('tabs'), on = nav.querySelector('.on');
+    if (on) nav.scrollTo({ left: on.offsetLeft - (nav.clientWidth - on.offsetWidth) / 2, behavior: 'smooth' });
   }
   function applyTheme() {
     if (db.theme === 'auto') document.documentElement.removeAttribute('data-theme');
@@ -419,7 +441,7 @@
 
   document.addEventListener('click', e => {
     const d = e.target.dataset || {};
-    if (d.tab) return showTab(d.tab);
+    if (d.tab) { showTab(d.tab); window.scrollTo(0, 0); return; }
     if (d.set) { for (const [k, v] of Object.entries(JSON.parse(d.set))) setPath(s, k, v); persist(); render(); }
     else if (d.load) { db.active = d.load; s = db.scenarios[d.load]; persist(); render(); }
     else if (d.delscn) {
@@ -460,7 +482,20 @@
     }
   });
 
+  $('menuBtn').addEventListener('click', () => {
+    const open = $('tools').classList.toggle('open');
+    $('menuBtn').setAttribute('aria-expanded', open);
+  });
+  // tap a number field and the whole value is selected, so typing replaces it
+  document.addEventListener('focusin', e => { if (e.target.type === 'number') e.target.select(); });
+  let lastW = chartSize().w, timer;
+  window.addEventListener('resize', () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => { const w = chartSize().w; if (w !== lastW) { lastW = w; render(); } }, 150);
+  });
+
   build();
+  document.querySelectorAll('input[type=number]').forEach(i => i.inputMode = 'decimal');
   applyTheme();
   render();
   showTab(location.hash.slice(1));

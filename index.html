@@ -201,6 +201,23 @@
   <button id="reset">Reset the active scenario to defaults</button>
 </main>
 
+<nav id="bottombar" aria-label="Main sections">
+  <button data-tab="income"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/></svg><span>Income</span></button>
+  <button data-tab="budget"><svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9h-9z"/><path d="M15 3.5A9 9 0 0 1 20.5 9H15z"/></svg><span>Budget</span></button>
+  <button data-tab="actuals"><svg viewBox="0 0 24 24"><path d="M9 4h6l1 2h3v14H5V6h3z"/><path d="m9 13 2 2 4-4"/></svg><span>Actuals</span></button>
+  <button data-tab="networth"><svg viewBox="0 0 24 24"><path d="m3 17 6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg><span>Net worth</span></button>
+  <button id="moreBtn" aria-haspopup="dialog" aria-expanded="false"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg><span>More</span></button>
+</nav>
+<div id="sheetBackdrop" hidden></div>
+<div id="moreSheet" role="dialog" aria-label="More sections" hidden>
+  <div class="grabber"></div>
+  <button data-tab="invest">Investments</button>
+  <button data-tab="carfund">Car fund</button>
+  <button data-tab="car">Car affordability</button>
+  <button data-tab="fi">Financial independence</button>
+  <button data-tab="scenarios">Scenarios</button>
+</div>
+
 <script src="calc.js"></script>
 <script src="charts.js"></script>
 <script src="app.js"></script>

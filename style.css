@@ -147,3 +147,30 @@ button.primary { background:var(--accent); border-color:var(--accent); color:#ff
   .grid, .stats { grid-template-columns:minmax(0,1fr); }
 }
 @media print { .sticky-sum { display:none !important; } }
+
+/* ---------- bottom tab bar (phones) ---------- */
+:root { --bar:58px; }
+#bottombar, #moreSheet, #sheetBackdrop { display:none; }
+@media (max-width: 640px) {
+  nav#tabs { display:none; }
+  #bottombar { display:flex; position:fixed; top:auto; left:0; right:0; bottom:0; z-index:5; overflow:visible; padding:0; gap:0; background:var(--card); border-top:1px solid var(--line);
+    padding-bottom:env(safe-area-inset-bottom); }
+  #bottombar button { flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
+    height:var(--bar); border:0; border-radius:0; background:none; color:var(--mute); font-size:11px; padding:0; min-height:var(--bar); }
+  #bottombar button.on { color:var(--accent); font-weight:600; }
+  #bottombar svg { width:24px; height:24px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+  #moreBtn svg circle { fill:currentColor; stroke:none; }
+  main { padding-bottom:calc(var(--bar) + env(safe-area-inset-bottom) + 24px); }
+  .sticky-sum { bottom:calc(var(--bar) + env(safe-area-inset-bottom) + 10px); }
+
+  #sheetBackdrop:not([hidden]) { display:block; position:fixed; inset:0; z-index:6; background:rgba(0,0,0,.45); }
+  #moreSheet:not([hidden]) { display:flex; flex-direction:column; position:fixed; left:0; right:0; z-index:7;
+    bottom:calc(var(--bar) + env(safe-area-inset-bottom)); background:var(--card); border-radius:16px 16px 0 0; padding:8px 12px 12px;
+    box-shadow:0 -6px 24px rgba(0,0,0,.25); animation:sheetUp .18s ease-out; }
+  #moreSheet .grabber { width:36px; height:4px; border-radius:2px; background:var(--line); margin:2px auto 8px; }
+  #moreSheet button { text-align:left; border:0; border-bottom:1px solid var(--line); border-radius:0; min-height:52px; font-size:16px; background:none; }
+  #moreSheet button:last-child { border-bottom:0; }
+  #moreSheet button.on { color:var(--accent); font-weight:600; }
+}
+@keyframes sheetUp { from { transform:translateY(24px); } to { transform:none; } }
+@media print { #bottombar, #moreSheet, #sheetBackdrop { display:none !important; } }

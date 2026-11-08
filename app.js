@@ -384,10 +384,17 @@
   function showTab(id) {
     if (!$(id)) id = 'income';
     document.querySelectorAll('main section').forEach(sec => sec.classList.toggle('on', sec.id === id));
-    document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === id));
+    document.querySelectorAll('[data-tab]').forEach(b => b.classList.toggle('on', b.dataset.tab === id));
+    $('moreBtn').classList.toggle('on', !!$('moreSheet').querySelector(`[data-tab="${id}"]`));
+    setSheet(false);
     history.replaceState(null, '', '#' + id);
     const nav = $('tabs'), on = nav.querySelector('.on');
     if (on) nav.scrollTo({ left: on.offsetLeft - (nav.clientWidth - on.offsetWidth) / 2, behavior: 'smooth' });
+  }
+  function setSheet(open) {
+    $('moreSheet').hidden = !open;
+    $('sheetBackdrop').hidden = !open;
+    $('moreBtn').setAttribute('aria-expanded', open);
   }
   function applyTheme() {
     if (db.theme === 'auto') document.documentElement.removeAttribute('data-theme');
@@ -440,7 +447,8 @@
   });
 
   document.addEventListener('click', e => {
-    const d = e.target.dataset || {};
+    const hit = e.target.closest && e.target.closest('[data-tab],[data-set],[data-load],[data-delscn],[data-delsnap]');
+    const d = hit ? hit.dataset : {};
     if (d.tab) { showTab(d.tab); window.scrollTo(0, 0); return; }
     if (d.set) { for (const [k, v] of Object.entries(JSON.parse(d.set))) setPath(s, k, v); persist(); render(); }
     else if (d.load) { db.active = d.load; s = db.scenarios[d.load]; persist(); render(); }
@@ -482,6 +490,9 @@
     }
   });
 
+  $('moreBtn').addEventListener('click', () => setSheet($('moreSheet').hidden));
+  $('sheetBackdrop').addEventListener('click', () => setSheet(false));
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') setSheet(false); });
   $('menuBtn').addEventListener('click', () => {
     const open = $('tools').classList.toggle('open');
     $('menuBtn').setAttribute('aria-expanded', open);

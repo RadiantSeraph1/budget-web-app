@@ -6,7 +6,7 @@
 
 **Tracking:** net worth snapshots vs plan, monthly actuals vs budget.
 
-**Mobile:** sticky scrolling tab bar, tables turn into labelled cards, 16px inputs with numeric keyboard and 44px tap targets, charts drawn at screen width, a floating cash-buffer pill while editing the budget, safe-area padding for notched phones.
+**Mobile:** bottom tab bar (Income, Budget, Actuals, Net worth, More), tables turn into labelled cards, 16px inputs with numeric keyboard and 44px tap targets, charts drawn at screen width, a floating cash-buffer pill while editing the budget, safe-area padding for notched phones.
 
 **Also:** multiple scenarios with side-by-side comparison, GH₵/US$ display switch, charts, light/dark theme, CSV export, print/PDF view.
 

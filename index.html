@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1b212a" media="(prefers-color-scheme: dark)">
+<title>2027 Personal Finance Planner</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <div class="top">
+    <h1>2027 Finance Planner</h1>
+    <div class="quick">
+      <select id="currency" aria-label="Show amounts in"><option value="GHS">GH₵</option><option value="USD">US$</option></select>
+      <button id="menuBtn" aria-expanded="false" aria-controls="tools" aria-label="Settings and export">⚙ Menu</button>
+    </div>
+  </div>
+  <div class="tools" id="tools">
+    <label>Scenario <select id="scenarioSel" title="Active scenario"></select></label>
+    <button id="theme" title="Switch light / dark">Theme: auto</button>
+    <button id="exportCsv">Export CSV</button>
+    <button id="print">Print / PDF</button>
+  </div>
+</header>
+<nav id="tabs" aria-label="Sections">
+  <button data-tab="income">Income &amp; tax</button>
+  <button data-tab="budget">Budget</button>
+  <button data-tab="invest">Investments</button>
+  <button data-tab="carfund">Car fund</button>
+  <button data-tab="car">Car affordability</button>
+  <button data-tab="fi">Independence</button>
+  <button data-tab="networth">Net worth</button>
+  <button data-tab="actuals">Actuals</button>
+  <button data-tab="scenarios">Scenarios</button>
+</nav>
+
+<main>
+  <p class="sub" id="scenarioLine"></p>
+  <p class="sub">Inputs are in GH₵ unless marked US$; the "Show" switch converts results to US$ at your exchange rate. Everything saves in this browser only. Projections are illustrations, not advice or guaranteed returns.</p>
+
+  <section id="income">
+    <h2>1. Income &amp; tax</h2>
+    <div class="grid">
+      <label>Gross salary (US$ / month)<input type="number" min="0" step="100" data-k="gross"></label>
+      <label>Exchange rate (GH₵ per US$)<input type="number" min="0" step="0.01" data-k="fx"></label>
+      <label>Employee SSNIT (%)<input type="number" min="0" step="0.1" data-k="ssnit"></label>
+      <label>Employer SSNIT (%)<input type="number" min="0" step="0.1" data-k="employer"></label>
+    </div>
+    <div class="cols">
+      <table id="payslip"></table>
+      <table id="employerCost"></table>
+    </div>
+    <p class="note">PAYE uses the GRA monthly bands for the 2026 year of assessment (in force from 1 Sep 2026), applied to gross minus employee SSNIT, for a Ghana-resident employee paid as basic salary. 2027 bands may differ, and paying a resident employee directly in US$ has legal limits, so confirm the payroll set-up with a Ghanaian payroll professional.</p>
+  </section>
+
+  <section id="budget">
+    <h2>2. Monthly budget</h2>
+    <div id="budgetAlert"></div>
+    <table>
+      <thead><tr><th>Category</th><th class="n">Monthly</th><th class="n">Annual</th><th class="n">% of take-home</th></tr></thead>
+      <tbody id="budgetRows"></tbody>
+      <tfoot id="budgetFoot"></tfoot>
+    </table>
+    <div class="sticky-sum" id="stickySum"></div>
+    <div class="budgetviz" id="budgetViz"></div>
+    <p class="note">Rows marked <em>save</em> build wealth or goal funds; the rest is spending. The cash buffer is whatever take-home is left after every row.</p>
+  </section>
+
+  <section id="invest">
+    <h2>3. Long-term investments</h2>
+    <p class="note" style="margin-top:0">Monthly amount comes from the <em>Long-term investments</em> row in the budget.</p>
+    <div class="grid">
+      <label>Expected return (% / year, effective)<input type="number" step="0.5" data-k="returnPct"></label>
+      <label>Global equity funds (%)<input type="number" min="0" data-k="alloc.global"></label>
+      <label>Ghanaian equities (%)<input type="number" min="0" data-k="alloc.local"></label>
+      <label>Bonds &amp; fixed income (%)<input type="number" min="0" data-k="alloc.bonds"></label>
+      <label>USD money market (%)<input type="number" min="0" data-k="alloc.usd"></label>
+    </div>
+    <div id="allocOut"></div>
+    <div id="investChart"></div>
+    <div id="investOut"></div>
+    <p class="note">Contributions are made at month end and returns compound monthly. Nominal figures, before tax, fees and inflation (the financial-independence section adjusts for inflation).</p>
+  </section>
+
+  <section id="carfund">
+    <h2>4. Car fund (low risk, USD + GHS)</h2>
+    <p class="note" style="margin-top:0">Monthly contribution comes from the <em>Car fund</em> row in the budget.</p>
+    <div class="grid">
+      <label>Months until purchase<input type="number" min="1" max="120" data-k="cf.months"></label>
+      <label>Share kept in GHS (%)<input type="number" min="0" max="100" data-k="cf.ghsPct"></label>
+      <label>Existing savings (GH₵)<input type="number" min="0" step="1000" data-k="cf.existing"></label>
+      <label>FX when converting (GH₵/US$)<input type="number" step="0.001" data-k="cf.fxBuy"></label>
+      <label>FX at purchase (GH₵/US$)<input type="number" step="0.001" data-k="cf.fxExit"></label>
+      <label>GHS fund return (% / year)<input type="number" step="0.1" data-k="cf.ghsRate"></label>
+      <label>GHS fund annual fee (%)<input type="number" step="0.05" data-k="cf.ghsFee"></label>
+      <label>GHS fund front-load (%)<input type="number" step="0.1" data-k="cf.front"></label>
+      <label>USD account return (% / year)<input type="number" step="0.1" data-k="cf.usdRate"></label>
+    </div>
+    <div id="cfOut"></div>
+    <div id="cfChart"></div>
+    <h3>Scenarios (rates are illustrations)</h3>
+    <table id="cfScen"></table>
+    <details>
+      <summary>Reference rates and fund terms from the planning chat (check before relying on them)</summary>
+      <table>
+        <tr><th>Product</th><th>Terms noted</th></tr>
+        <tr><td>EDC Money Market</td><td>7.82% one-year performance at 2 Nov 2026; fee schedule not confirmed</td></tr>
+        <tr><td>Databank MFund (Tier 2)</td><td>1% front-load, 1.25% p.a. fee, 3–5 business days to withdraw</td></tr>
+        <tr><td>Fidelity Money Market</td><td>No entry/exit fee, 2% + 0.4% trustee p.a.</td></tr>
+        <tr><td>T-bills, 2 Nov 2026</td><td>91-day 4.60%, 182-day 6.26%, 364-day 9.60% (auction rates)</td></tr>
+        <tr><td>USD account</td><td>No verified Ghana USD money-market fund; get a written bank quote for USD fixed deposits</td></tr>
+      </table>
+    </details>
+    <p class="note">Each month's contribution is split at the GHS share. Front-load is taken from each GHS deposit; the annual fee is subtracted from the GHS return. The USD part is converted at the "converting" rate and valued at the "purchase" rate. Taxes and FX spreads are not modelled.</p>
+  </section>
+
+  <section id="car">
+    <h2>5. Car affordability</h2>
+    <div class="grid">
+      <label>Vehicle + shipping, CIF (GH₵)<input type="number" min="0" step="1000" data-k="car.cif"></label>
+      <label>Import duty &amp; clearing (GH₵)<input type="number" min="0" step="1000" data-k="car.duty"></label>
+      <label>Registration &amp; other (GH₵)<input type="number" min="0" step="500" data-k="car.other"></label>
+      <label>Deposit (%)<input type="number" min="0" max="100" data-k="car.depositPct"></label>
+      <label>Loan interest (% / year)<input type="number" step="0.5" data-k="car.rate"></label>
+      <label>Loan term (months)<input type="number" min="1" data-k="car.months"></label>
+      <label>Fuel (GH₵ / month)<input type="number" min="0" step="100" data-k="car.fuel"></label>
+      <label>Insurance &amp; maintenance (GH₵ / month)<input type="number" min="0" step="100" data-k="car.insMaint"></label>
+      <label>Max loan instalment (GH₵ / month)<input type="number" min="0" step="100" data-k="car.instCeiling"></label>
+      <label>Max total ownership cost (GH₵ / month)<input type="number" min="0" step="100" data-k="car.ownCeiling"></label>
+    </div>
+    <div id="carOut"></div>
+    <p class="note">Defaults come from the Changan CS85 import listing discussed in the chat (about GH₵110,000 CIF plus GH₵40,000–50,000 duties). Those are advertised estimates, not quotes: get a written landed-cost quotation and a bank quotation showing the interest rate, fees and total repayment. Loan payments use standard reducing-balance amortisation.</p>
+  </section>
+
+  <section id="fi">
+    <h2>6. Financial independence roadmap</h2>
+    <div class="grid">
+      <label>Return (% / year)<input type="number" step="0.5" data-k="returnPct"></label>
+      <label>Inflation (% / year)<input type="number" step="0.5" data-k="inflation"></label>
+      <label>Safe withdrawal rate (%)<input type="number" step="0.1" min="0.5" data-k="swr"></label>
+      <label>Emergency fund target (GH₵)<input type="number" min="0" step="5000" data-k="emergencyTarget"></label>
+      <label>Emergency fund today (GH₵)<input type="number" min="0" step="1000" data-k="emergencyStart"></label>
+      <label>Investments today (GH₵)<input type="number" min="0" step="1000" data-k="startPortfolio"></label>
+      <label>Share of each raise invested (%)<input type="number" min="0" max="100" data-k="investShare"></label>
+    </div>
+    <h3>Gross salary by year (US$ / month)</h3>
+    <div class="grid" id="raises"></div>
+    <div id="fiChart"></div>
+    <div id="fiOut"></div>
+    <p class="note">Results are in today's money: the return is converted to a real return using the inflation rate (0% inflation reproduces the nominal figures in the chat). When the emergency fund reaches its target, its monthly contribution moves into investments. Of each raise's extra take-home, the invested share goes to investments and the rest is assumed spent, which raises the financial-independence target. The target is annual spending divided by the withdrawal rate (4% = 25×). Spending counts every non-saving row, including rent, family support and travel.</p>
+  </section>
+
+
+  <section id="networth">
+    <h2>7. Net worth tracker</h2>
+    <p class="note" style="margin-top:0">Log your real balances each quarter and compare them with the plan. The plan line covers the three pots you are saving into (emergency fund, long-term investments, car fund) from the start month below, in nominal terms using the current scenario.</p>
+    <div class="grid">
+      <label>Plan starts (month)<input type="month" data-k="@tracker.start"></label>
+    </div>
+    <div class="row">
+      <label>Date<input type="date" data-k="@tracker.draft.date"></label>
+      <label>Emergency fund (GH₵)<input type="number" min="0" data-k="@tracker.draft.emergency"></label>
+      <label>Investments (GH₵)<input type="number" min="0" data-k="@tracker.draft.invest"></label>
+      <label>Car fund (GH₵)<input type="number" min="0" data-k="@tracker.draft.car"></label>
+      <label>Other assets (GH₵)<input type="number" min="0" data-k="@tracker.draft.other"></label>
+      <label>Debts (GH₵)<input type="number" min="0" data-k="@tracker.draft.debt"></label>
+      <button class="primary" id="addSnap">Add snapshot</button>
+    </div>
+    <div id="nwOut"></div>
+  </section>
+
+  <section id="actuals">
+    <h2>8. Monthly actuals vs budget</h2>
+    <p class="note" style="margin-top:0">Enter what you really spent or saved in a month. Spending rows show how far under (good) or over (bad) budget you are; saving rows show whether you hit the target.</p>
+    <div class="row">
+      <label>Month<input type="month" data-k="@tracker.actualMonth"></label>
+    </div>
+    <table>
+      <thead><tr><th>Category</th><th class="n">Budget</th><th class="n">Actual (GH₵)</th><th class="n">Variance</th></tr></thead>
+      <tbody id="actualRows"></tbody>
+      <tfoot id="actualFoot"></tfoot>
+    </table>
+    <h3>Months logged</h3>
+    <div id="actualHistory"></div>
+  </section>
+
+  <section id="scenarios">
+    <h2>9. Scenarios</h2>
+    <p class="note" style="margin-top:0">Every edit changes the active scenario only. Saving a copy creates a new scenario and switches to it, leaving the original untouched, so you can try something (a US$8,000 salary, a different car) and compare them side by side. Your net worth snapshots and monthly actuals are shared across scenarios.</p>
+    <div class="row">
+      <label>New scenario name<input type="text" id="scenarioName" placeholder="e.g. US$8k salary"></label>
+      <button class="primary" id="saveScenario">Save a copy of the active scenario</button>
+    </div>
+    <div id="scenarioList"></div>
+    <h3>Comparison</h3>
+    <div id="scenarioCompare" style="overflow-x:auto"></div>
+  </section>
+
+  <button id="reset">Reset the active scenario to defaults</button>
+</main>
+
+<nav id="bottombar" aria-label="Main sections">
+  <button data-tab="income"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/></svg><span>Income</span></button>
+  <button data-tab="budget"><svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9h-9z"/><path d="M15 3.5A9 9 0 0 1 20.5 9H15z"/></svg><span>Budget</span></button>
+  <button data-tab="actuals"><svg viewBox="0 0 24 24"><path d="M9 4h6l1 2h3v14H5V6h3z"/><path d="m9 13 2 2 4-4"/></svg><span>Actuals</span></button>
+  <button data-tab="networth"><svg viewBox="0 0 24 24"><path d="m3 17 6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg><span>Net worth</span></button>
+  <button id="moreBtn" aria-haspopup="dialog" aria-expanded="false"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg><span>More</span></button>
+</nav>
+<div id="sheetBackdrop" hidden></div>
+<div id="moreSheet" role="dialog" aria-label="More sections" hidden>
+  <div class="grabber"></div>
+  <button data-tab="invest">Investments</button>
+  <button data-tab="carfund">Car fund</button>
+  <button data-tab="car">Car affordability</button>
+  <button data-tab="fi">Financial independence</button>
+  <button data-tab="scenarios">Scenarios</button>
+</div>
+
+<script src="calc.js"></script>
+<script src="charts.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

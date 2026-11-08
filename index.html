@@ -3,172 +3,138 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>2027 Salary Budget</title>
-<style>
-  :root { --bg:#f6f7f9; --card:#fff; --ink:#1c2430; --mute:#6b7685; --line:#e3e7ee; --accent:#1f6feb; --bad:#c62828; --ok:#2e7d32; }
-  * { box-sizing: border-box; }
-  body { margin:0; font:15px/1.5 system-ui,sans-serif; background:var(--bg); color:var(--ink); }
-  main { max-width:880px; margin:0 auto; padding:20px 16px 48px; }
-  h1 { font-size:22px; margin:0 0 4px; }
-  h2 { font-size:16px; margin:0 0 12px; }
-  p.sub { margin:0 0 20px; color:var(--mute); }
-  section { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px; margin-bottom:16px; }
-  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; }
-  label { display:block; font-size:13px; color:var(--mute); }
-  input { width:100%; padding:7px 8px; border:1px solid var(--line); border-radius:6px; font:inherit; color:var(--ink); background:#fff; }
-  table { width:100%; border-collapse:collapse; }
-  th, td { text-align:left; padding:6px 4px; border-bottom:1px solid var(--line); }
-  th { font-size:12px; color:var(--mute); font-weight:600; text-transform:uppercase; }
-  td.n, th.n { text-align:right; font-variant-numeric:tabular-nums; }
-  td input { text-align:right; max-width:130px; margin-left:auto; display:block; }
-  tr.total td { font-weight:700; border-bottom:0; }
-  .bar { display:flex; height:14px; border-radius:7px; overflow:hidden; background:var(--line); margin:8px 0 6px; }
-  .bar span { display:block; height:100%; }
-  .legend { display:flex; flex-wrap:wrap; gap:4px 14px; font-size:13px; color:var(--mute); }
-  .legend i { display:inline-block; width:10px; height:10px; border-radius:2px; margin-right:5px; }
-  .bad { color:var(--bad); } .ok { color:var(--ok); }
-  .note { font-size:13px; color:var(--mute); margin-top:10px; }
-  .banner { padding:10px 12px; border-radius:8px; margin-bottom:12px; background:#fdecea; color:var(--bad); }
-  button { font:inherit; padding:7px 12px; border:1px solid var(--line); border-radius:6px; background:#fff; cursor:pointer; }
-</style>
+<title>2027 Personal Finance Planner</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-<main>
-  <h1>2027 Salary Budget</h1>
-  <p class="sub">Monthly plan in GH₵ from a US$ gross salary. Edit any number; it saves in this browser.</p>
+<header>
+  <h1>2027 Personal Finance Planner</h1>
+  <nav>
+    <a href="#income">Income &amp; tax</a>
+    <a href="#budget">Budget</a>
+    <a href="#invest">Investments</a>
+    <a href="#carfund">Car fund</a>
+    <a href="#car">Car affordability</a>
+    <a href="#fi">Financial independence</a>
+  </nav>
+</header>
 
-  <section>
-    <h2>Salary</h2>
+<main>
+  <p class="sub">Everything is in GH₵ unless marked US$. Change any number and every section updates. Your inputs are saved in this browser only. Projections are illustrations, not advice or guaranteed returns.</p>
+
+  <section id="income">
+    <h2>1. Income &amp; tax</h2>
     <div class="grid">
-      <label>Gross salary (US$ / month)<input id="gross" type="number" min="0" step="100"></label>
-      <label>Exchange rate (GH₵ per US$)<input id="fx" type="number" min="0" step="0.01"></label>
-      <label>Employee SSNIT (% of gross)<input id="ssnit" type="number" min="0" step="0.1"></label>
-      <label>PAYE (GH₵ / month)<input id="paye" type="number" min="0" step="10"></label>
+      <label>Gross salary (US$ / month)<input type="number" min="0" step="100" data-k="gross"></label>
+      <label>Exchange rate (GH₵ per US$)<input type="number" min="0" step="0.01" data-k="fx"></label>
+      <label>Employee SSNIT (%)<input type="number" min="0" step="0.1" data-k="ssnit"></label>
+      <label>Employer SSNIT (%)<input type="number" min="0" step="0.1" data-k="employer"></label>
     </div>
-    <table style="margin-top:12px">
-      <tr><td>Gross (GH₵)</td><td class="n" id="grossGhs"></td></tr>
-      <tr><td>SSNIT</td><td class="n" id="ssnitAmt"></td></tr>
-      <tr><td>PAYE</td><td class="n" id="payeAmt"></td></tr>
-      <tr class="total"><td>Take-home</td><td class="n" id="net"></td></tr>
-    </table>
-    <p class="note">PAYE is an estimate carried over from the planning chat, not a computed 2027 figure. Confirm the tax bands and how a US$ salary is taxed before relying on it.</p>
+    <div class="cols">
+      <table id="payslip"></table>
+      <table id="employerCost"></table>
+    </div>
+    <p class="note">PAYE uses the GRA monthly bands for the 2026 year of assessment (in force from 1 Sep 2026), applied to gross minus employee SSNIT, for a Ghana-resident employee paid as basic salary. 2027 bands may differ, and paying a resident employee directly in US$ has legal limits, so confirm the payroll set-up with a Ghanaian payroll professional.</p>
   </section>
 
-  <section>
-    <h2>Monthly allocation</h2>
-    <div id="alert"></div>
+  <section id="budget">
+    <h2>2. Monthly budget</h2>
+    <div id="budgetAlert"></div>
     <table>
-      <thead><tr><th>Category</th><th class="n">Monthly (GH₵)</th><th class="n">Annual (GH₵)</th><th class="n">% of take-home</th></tr></thead>
-      <tbody id="rows"></tbody>
-      <tfoot>
-        <tr class="total"><td>Total allocated</td><td class="n" id="totM"></td><td class="n" id="totA"></td><td class="n" id="totP"></td></tr>
-        <tr class="total"><td>Unallocated</td><td class="n" id="left"></td><td class="n" id="leftA"></td><td></td></tr>
-      </tfoot>
+      <thead><tr><th>Category</th><th class="n">Monthly</th><th class="n">Annual</th><th class="n">% of take-home</th></tr></thead>
+      <tbody id="budgetRows"></tbody>
+      <tfoot id="budgetFoot"></tfoot>
     </table>
     <div class="bar" id="bar"></div>
     <div class="legend" id="legend"></div>
+    <p class="note">Rows marked <em>save</em> build wealth or goal funds; the rest is spending. The cash buffer is whatever take-home is left after every row.</p>
   </section>
 
-  <section>
-    <h2>Savings goals (per year)</h2>
-    <table id="goals"></table>
-    <p class="note">Before investment returns.</p>
+  <section id="invest">
+    <h2>3. Long-term investments</h2>
+    <p class="note" style="margin-top:0">Monthly amount comes from the <em>Long-term investments</em> row in the budget.</p>
+    <div class="grid">
+      <label>Expected return (% / year, effective)<input type="number" step="0.5" data-k="returnPct"></label>
+      <label>Global equity funds (%)<input type="number" min="0" data-k="alloc.global"></label>
+      <label>Ghanaian equities (%)<input type="number" min="0" data-k="alloc.local"></label>
+      <label>Bonds &amp; fixed income (%)<input type="number" min="0" data-k="alloc.bonds"></label>
+      <label>USD money market (%)<input type="number" min="0" data-k="alloc.usd"></label>
+    </div>
+    <div id="allocOut"></div>
+    <div id="investOut"></div>
+    <p class="note">Contributions are made at month end and returns compound monthly. Nominal figures, before tax, fees and inflation (the financial-independence section adjusts for inflation).</p>
   </section>
 
-  <button id="reset">Reset to defaults</button>
+  <section id="carfund">
+    <h2>4. Car fund (low risk, USD + GHS)</h2>
+    <p class="note" style="margin-top:0">Monthly contribution comes from the <em>Car fund</em> row in the budget.</p>
+    <div class="grid">
+      <label>Months until purchase<input type="number" min="1" max="120" data-k="cf.months"></label>
+      <label>Share kept in GHS (%)<input type="number" min="0" max="100" data-k="cf.ghsPct"></label>
+      <label>Existing savings (GH₵)<input type="number" min="0" step="1000" data-k="cf.existing"></label>
+      <label>FX when converting (GH₵/US$)<input type="number" step="0.001" data-k="cf.fxBuy"></label>
+      <label>FX at purchase (GH₵/US$)<input type="number" step="0.001" data-k="cf.fxExit"></label>
+      <label>GHS fund return (% / year)<input type="number" step="0.1" data-k="cf.ghsRate"></label>
+      <label>GHS fund annual fee (%)<input type="number" step="0.05" data-k="cf.ghsFee"></label>
+      <label>GHS fund front-load (%)<input type="number" step="0.1" data-k="cf.front"></label>
+      <label>USD account return (% / year)<input type="number" step="0.1" data-k="cf.usdRate"></label>
+    </div>
+    <div id="cfOut"></div>
+    <h3>Scenarios (rates are illustrations)</h3>
+    <table id="cfScen"></table>
+    <details>
+      <summary>Reference rates and fund terms from the planning chat (check before relying on them)</summary>
+      <table>
+        <tr><th>Product</th><th>Terms noted</th></tr>
+        <tr><td>EDC Money Market</td><td>7.82% one-year performance at 2 Nov 2026; fee schedule not confirmed</td></tr>
+        <tr><td>Databank MFund (Tier 2)</td><td>1% front-load, 1.25% p.a. fee, 3–5 business days to withdraw</td></tr>
+        <tr><td>Fidelity Money Market</td><td>No entry/exit fee, 2% + 0.4% trustee p.a.</td></tr>
+        <tr><td>T-bills, 2 Nov 2026</td><td>91-day 4.60%, 182-day 6.26%, 364-day 9.60% (auction rates)</td></tr>
+        <tr><td>USD account</td><td>No verified Ghana USD money-market fund; get a written bank quote for USD fixed deposits</td></tr>
+      </table>
+    </details>
+    <p class="note">Each month's contribution is split at the GHS share. Front-load is taken from each GHS deposit; the annual fee is subtracted from the GHS return. The USD part is converted at the "converting" rate and valued at the "purchase" rate. Taxes and FX spreads are not modelled.</p>
+  </section>
+
+  <section id="car">
+    <h2>5. Car affordability</h2>
+    <div class="grid">
+      <label>Vehicle + shipping, CIF (GH₵)<input type="number" min="0" step="1000" data-k="car.cif"></label>
+      <label>Import duty &amp; clearing (GH₵)<input type="number" min="0" step="1000" data-k="car.duty"></label>
+      <label>Registration &amp; other (GH₵)<input type="number" min="0" step="500" data-k="car.other"></label>
+      <label>Deposit (%)<input type="number" min="0" max="100" data-k="car.depositPct"></label>
+      <label>Loan interest (% / year)<input type="number" step="0.5" data-k="car.rate"></label>
+      <label>Loan term (months)<input type="number" min="1" data-k="car.months"></label>
+      <label>Fuel (GH₵ / month)<input type="number" min="0" step="100" data-k="car.fuel"></label>
+      <label>Insurance &amp; maintenance (GH₵ / month)<input type="number" min="0" step="100" data-k="car.insMaint"></label>
+      <label>Max loan instalment (GH₵ / month)<input type="number" min="0" step="100" data-k="car.instCeiling"></label>
+      <label>Max total ownership cost (GH₵ / month)<input type="number" min="0" step="100" data-k="car.ownCeiling"></label>
+    </div>
+    <div id="carOut"></div>
+    <p class="note">Defaults come from the Changan CS85 import listing discussed in the chat (about GH₵110,000 CIF plus GH₵40,000–50,000 duties). Those are advertised estimates, not quotes: get a written landed-cost quotation and a bank quotation showing the interest rate, fees and total repayment. Loan payments use standard reducing-balance amortisation.</p>
+  </section>
+
+  <section id="fi">
+    <h2>6. Financial independence roadmap</h2>
+    <div class="grid">
+      <label>Return (% / year)<input type="number" step="0.5" data-k="returnPct"></label>
+      <label>Inflation (% / year)<input type="number" step="0.5" data-k="inflation"></label>
+      <label>Safe withdrawal rate (%)<input type="number" step="0.1" min="0.5" data-k="swr"></label>
+      <label>Emergency fund target (GH₵)<input type="number" min="0" step="5000" data-k="emergencyTarget"></label>
+      <label>Emergency fund today (GH₵)<input type="number" min="0" step="1000" data-k="emergencyStart"></label>
+      <label>Investments today (GH₵)<input type="number" min="0" step="1000" data-k="startPortfolio"></label>
+      <label>Share of each raise invested (%)<input type="number" min="0" max="100" data-k="investShare"></label>
+    </div>
+    <h3>Gross salary by year (US$ / month)</h3>
+    <div class="grid" id="raises"></div>
+    <div id="fiOut"></div>
+    <p class="note">Results are in today's money: the return is converted to a real return using the inflation rate (0% inflation reproduces the nominal figures in the chat). When the emergency fund reaches its target, its monthly contribution moves into investments. Of each raise's extra take-home, the invested share goes to investments and the rest is assumed spent, which raises the financial-independence target. The target is annual spending divided by the withdrawal rate (4% = 25×). Spending counts every non-saving row, including rent, family support and travel.</p>
+  </section>
+
+  <button id="reset">Reset all to defaults</button>
 </main>
 
-<script>
-const KEY = 'budget-2027';
-const DEFAULTS = {
-  gross: 5000, fx: 11.64, ssnit: 5.5, paye: 15371,
-  items: [
-    { group: 'Housing',  name: 'Rent reserve (1-bed, annual advance)', amt: 4500, goal: true },
-    { group: 'Housing',  name: 'Electricity, water & internet', amt: 1500 },
-    { group: 'Living',   name: 'Food & groceries', amt: 3500 },
-    { group: 'Living',   name: 'Transport', amt: 1800 },
-    { group: 'Living',   name: 'Personal care & gym', amt: 1200 },
-    { group: 'Living',   name: 'Entertainment & dining', amt: 1200 },
-    { group: 'Family',   name: 'Parents & immediate family', amt: 4000 },
-    { group: 'Travel',   name: 'International travel fund', amt: 4000, goal: true },
-    { group: 'Savings',  name: 'Emergency fund', amt: 3500, goal: true },
-    { group: 'Savings',  name: 'Long-term investments', amt: 9000, goal: true },
-    { group: 'Savings',  name: 'Car fund', amt: 5000, goal: true },
-    { group: 'Other',    name: 'Medical & annual expenses', amt: 1000 },
-    { group: 'Other',    name: 'Cash buffer', amt: 428 },
-  ],
-};
-const COLORS = { Housing:'#1f6feb', Living:'#8957e5', Family:'#d29922', Travel:'#2da44e', Savings:'#cf222e', Other:'#6e7781' };
-
-let s = load();
-const $ = id => document.getElementById(id);
-const fmt = n => 'GH₵' + Math.round(n).toLocaleString('en-US');
-
-function load() {
-  try { return JSON.parse(localStorage.getItem(KEY)) || structuredClone(DEFAULTS); }
-  catch { return structuredClone(DEFAULTS); }
-}
-const save = () => localStorage.setItem(KEY, JSON.stringify(s));
-
-function render() {
-  const grossGhs = s.gross * s.fx;
-  const ssnit = grossGhs * s.ssnit / 100;
-  const net = grossGhs - ssnit - s.paye;
-  $('grossGhs').textContent = fmt(grossGhs);
-  $('ssnitAmt').textContent = '-' + fmt(ssnit);
-  $('payeAmt').textContent = '-' + fmt(s.paye);
-  $('net').textContent = fmt(net);
-
-  const total = s.items.reduce((a, i) => a + i.amt, 0);
-  const left = net - total;
-  $('totM').textContent = fmt(total);
-  $('totA').textContent = fmt(total * 12);
-  $('totP').textContent = net > 0 ? (total / net * 100).toFixed(1) + '%' : '–';
-  $('left').textContent = fmt(left);
-  $('left').className = 'n ' + (left < 0 ? 'bad' : 'ok');
-  $('leftA').textContent = fmt(left * 12);
-  $('alert').innerHTML = left < 0
-    ? `<div class="banner">Over budget by ${fmt(-left)} a month. Trim a category or the cash buffer.</div>` : '';
-
-  // rows (rebuild only when not typing in one, to keep focus)
-  const rows = $('rows');
-  if (!rows.children.length) {
-    let last = '';
-    s.items.forEach((it, idx) => {
-      if (it.group !== last) { rows.insertAdjacentHTML('beforeend', `<tr><td colspan="4"><b>${it.group}</b></td></tr>`); last = it.group; }
-      rows.insertAdjacentHTML('beforeend',
-        `<tr><td>${it.name}</td><td><input type="number" min="0" step="100" data-i="${idx}" value="${it.amt}"></td>` +
-        `<td class="n" id="a${idx}"></td><td class="n" id="p${idx}"></td></tr>`);
-    });
-  }
-  s.items.forEach((it, idx) => {
-    $('a' + idx).textContent = fmt(it.amt * 12);
-    $('p' + idx).textContent = net > 0 ? (it.amt / net * 100).toFixed(1) + '%' : '–';
-  });
-
-  const groups = {};
-  s.items.forEach(i => groups[i.group] = (groups[i.group] || 0) + i.amt);
-  const denom = Math.max(net, total) || 1;
-  $('bar').innerHTML = Object.entries(groups)
-    .map(([g, v]) => `<span style="width:${v / denom * 100}%;background:${COLORS[g]}" title="${g}"></span>`).join('');
-  $('legend').innerHTML = Object.entries(groups)
-    .map(([g, v]) => `<span><i style="background:${COLORS[g]}"></i>${g} ${fmt(v)}</span>`).join('');
-
-  const goals = s.items.filter(i => i.goal);
-  $('goals').innerHTML = goals.map(g => `<tr><td>${g.name}</td><td class="n">${fmt(g.amt * 12)}</td></tr>`).join('') +
-    `<tr class="total"><td>Total earmarked</td><td class="n">${fmt(goals.reduce((a, g) => a + g.amt * 12, 0))}</td></tr>`;
-}
-
-for (const k of ['gross', 'fx', 'ssnit', 'paye']) {
-  $(k).value = s[k];
-  $(k).addEventListener('input', e => { s[k] = +e.target.value || 0; save(); render(); });
-}
-$('rows').addEventListener('input', e => {
-  if (e.target.dataset.i == null) return;
-  s.items[e.target.dataset.i].amt = +e.target.value || 0; save(); render();
-});
-$('reset').addEventListener('click', () => { localStorage.removeItem(KEY); location.reload(); });
-render();
-</script>
+<script src="calc.js"></script>
+<script src="app.js"></script>
 </body>
 </html>

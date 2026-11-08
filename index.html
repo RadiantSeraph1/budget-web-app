@@ -8,19 +8,32 @@
 </head>
 <body>
 <header>
-  <h1>2027 Personal Finance Planner</h1>
-  <nav>
-    <a href="#income">Income &amp; tax</a>
-    <a href="#budget">Budget</a>
-    <a href="#invest">Investments</a>
-    <a href="#carfund">Car fund</a>
-    <a href="#car">Car affordability</a>
-    <a href="#fi">Financial independence</a>
+  <div class="top">
+    <h1>2027 Personal Finance Planner</h1>
+    <div class="tools">
+      <select id="scenarioSel" title="Active scenario"></select>
+      <label style="display:flex;gap:4px;align-items:center">Show <select id="currency"><option value="GHS">GH₵</option><option value="USD">US$</option></select></label>
+      <button id="theme" title="Switch light / dark">Theme: auto</button>
+      <button id="exportCsv">Export CSV</button>
+      <button id="print">Print / PDF</button>
+    </div>
+  </div>
+  <nav id="tabs">
+    <button data-tab="income">Income &amp; tax</button>
+    <button data-tab="budget">Budget</button>
+    <button data-tab="invest">Investments</button>
+    <button data-tab="carfund">Car fund</button>
+    <button data-tab="car">Car affordability</button>
+    <button data-tab="fi">Independence</button>
+    <button data-tab="networth">Net worth</button>
+    <button data-tab="actuals">Actuals</button>
+    <button data-tab="scenarios">Scenarios</button>
   </nav>
 </header>
 
 <main>
-  <p class="sub">Everything is in GH₵ unless marked US$. Change any number and every section updates. Your inputs are saved in this browser only. Projections are illustrations, not advice or guaranteed returns.</p>
+  <p class="sub" id="scenarioLine"></p>
+  <p class="sub">Inputs are in GH₵ unless marked US$; the "Show" switch converts results to US$ at your exchange rate. Everything saves in this browser only. Projections are illustrations, not advice or guaranteed returns.</p>
 
   <section id="income">
     <h2>1. Income &amp; tax</h2>
@@ -45,8 +58,7 @@
       <tbody id="budgetRows"></tbody>
       <tfoot id="budgetFoot"></tfoot>
     </table>
-    <div class="bar" id="bar"></div>
-    <div class="legend" id="legend"></div>
+    <div class="budgetviz" id="budgetViz"></div>
     <p class="note">Rows marked <em>save</em> build wealth or goal funds; the rest is spending. The cash buffer is whatever take-home is left after every row.</p>
   </section>
 
@@ -61,6 +73,7 @@
       <label>USD money market (%)<input type="number" min="0" data-k="alloc.usd"></label>
     </div>
     <div id="allocOut"></div>
+    <div id="investChart"></div>
     <div id="investOut"></div>
     <p class="note">Contributions are made at month end and returns compound monthly. Nominal figures, before tax, fees and inflation (the financial-independence section adjusts for inflation).</p>
   </section>
@@ -80,6 +93,7 @@
       <label>USD account return (% / year)<input type="number" step="0.1" data-k="cf.usdRate"></label>
     </div>
     <div id="cfOut"></div>
+    <div id="cfChart"></div>
     <h3>Scenarios (rates are illustrations)</h3>
     <table id="cfScen"></table>
     <details>
@@ -127,14 +141,62 @@
     </div>
     <h3>Gross salary by year (US$ / month)</h3>
     <div class="grid" id="raises"></div>
+    <div id="fiChart"></div>
     <div id="fiOut"></div>
     <p class="note">Results are in today's money: the return is converted to a real return using the inflation rate (0% inflation reproduces the nominal figures in the chat). When the emergency fund reaches its target, its monthly contribution moves into investments. Of each raise's extra take-home, the invested share goes to investments and the rest is assumed spent, which raises the financial-independence target. The target is annual spending divided by the withdrawal rate (4% = 25×). Spending counts every non-saving row, including rent, family support and travel.</p>
   </section>
 
-  <button id="reset">Reset all to defaults</button>
+
+  <section id="networth">
+    <h2>7. Net worth tracker</h2>
+    <p class="note" style="margin-top:0">Log your real balances each quarter and compare them with the plan. The plan line covers the three pots you are saving into (emergency fund, long-term investments, car fund) from the start month below, in nominal terms using the current scenario.</p>
+    <div class="grid">
+      <label>Plan starts (month)<input type="month" data-k="@tracker.start"></label>
+    </div>
+    <div class="row">
+      <label>Date<input type="date" data-k="@tracker.draft.date"></label>
+      <label>Emergency fund (GH₵)<input type="number" min="0" data-k="@tracker.draft.emergency"></label>
+      <label>Investments (GH₵)<input type="number" min="0" data-k="@tracker.draft.invest"></label>
+      <label>Car fund (GH₵)<input type="number" min="0" data-k="@tracker.draft.car"></label>
+      <label>Other assets (GH₵)<input type="number" min="0" data-k="@tracker.draft.other"></label>
+      <label>Debts (GH₵)<input type="number" min="0" data-k="@tracker.draft.debt"></label>
+      <button class="primary" id="addSnap">Add snapshot</button>
+    </div>
+    <div id="nwOut"></div>
+  </section>
+
+  <section id="actuals">
+    <h2>8. Monthly actuals vs budget</h2>
+    <p class="note" style="margin-top:0">Enter what you really spent or saved in a month. Spending rows show how far under (good) or over (bad) budget you are; saving rows show whether you hit the target.</p>
+    <div class="row">
+      <label>Month<input type="month" data-k="@tracker.actualMonth"></label>
+    </div>
+    <table>
+      <thead><tr><th>Category</th><th class="n">Budget</th><th class="n">Actual (GH₵)</th><th class="n">Variance</th></tr></thead>
+      <tbody id="actualRows"></tbody>
+      <tfoot id="actualFoot"></tfoot>
+    </table>
+    <h3>Months logged</h3>
+    <div id="actualHistory"></div>
+  </section>
+
+  <section id="scenarios">
+    <h2>9. Scenarios</h2>
+    <p class="note" style="margin-top:0">Every edit changes the active scenario only. Saving a copy creates a new scenario and switches to it, leaving the original untouched, so you can try something (a US$8,000 salary, a different car) and compare them side by side. Your net worth snapshots and monthly actuals are shared across scenarios.</p>
+    <div class="row">
+      <label>New scenario name<input type="text" id="scenarioName" placeholder="e.g. US$8k salary"></label>
+      <button class="primary" id="saveScenario">Save a copy of the active scenario</button>
+    </div>
+    <div id="scenarioList"></div>
+    <h3>Comparison</h3>
+    <div id="scenarioCompare" style="overflow-x:auto"></div>
+  </section>
+
+  <button id="reset">Reset the active scenario to defaults</button>
 </main>
 
 <script src="calc.js"></script>
+<script src="charts.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

@@ -82,7 +82,7 @@
     const net0 = o.netFor(o.salaries[0]);
     let port = o.startPortfolio || 0, emergency = o.emergencyStart || 0, emergencyMonth = null;
     if (emergency >= o.emergencyTarget) emergencyMonth = 0;
-    const years = [], maxYears = o.maxYears || 50;
+    const years = [], monthly = [], maxYears = o.maxYears || 50;
     let fiMonth = null;
     for (let m = 1; m <= maxYears * 12; m++) {
       const y = Math.floor((m - 1) / 12);
@@ -98,12 +98,56 @@
       port = port * (1 + r) + c;
       const target = (o.annualSpend + extra * 12 * (1 - o.investShare)) / (o.swrPct / 100);
       if (fiMonth === null && port >= target) fiMonth = m;
+      monthly.push(port);
       if (m % 12 === 0) years.push({ year: m / 12, port, target, contribution: c });
     }
-    return { years, fiMonth, emergencyMonth };
+    return { years, monthly, fiMonth, emergencyMonth };
   }
 
-  const api = { PAYE_BANDS, paye, salary, fv, pmt, maxLoan, carFund, fiPath, monthlyRate };
+  // The whole model for one scenario `s` (the shape saved by the app).
+  function plan(s) {
+    const item = id => s.items.find(i => i.id === id);
+    const sal = g => salary({ grossUsd: g, fx: s.fx, ssnitPct: s.ssnit, employerPct: s.employer });
+    const pay = sal(s.gross), net = pay.net;
+    const total = s.items.reduce((a, i) => a + i.amt, 0);
+    const left = net - total;
+    const saveTotal = s.items.filter(i => i.kind === 'save').reduce((a, i) => a + i.amt, 0);
+    const annualSpend = s.items.filter(i => i.kind === 'spend').reduce((a, i) => a + i.amt, 0) * 12;
+
+    const cfFor = rates => carFund({ monthly: item('car').amt, months: s.cf.months, ghsPct: s.cf.ghsPct,
+      fxBuy: s.cf.fxBuy, fxExit: s.cf.fxExit, ghsRatePct: rates[0], ghsFeePct: s.cf.ghsFee,
+      frontLoadPct: s.cf.front, usdRatePct: rates[1], existing: s.cf.existing });
+    const cf = cfFor([s.cf.ghsRate, s.cf.usdRate]);
+
+    const c = s.car;
+    const price = c.cif + c.duty + c.other;
+    const deposit = price * c.depositPct / 100, loan = price - deposit;
+    const instalment = c.months > 0 ? pmt(loan, c.rate / 100, c.months) : 0;
+    const own = instalment + c.fuel + c.insMaint;
+    const car = {
+      price, deposit, loan, instalment, own,
+      interest: instalment * c.months - loan,
+      maxPrice: maxLoan(c.instCeiling, c.rate / 100, c.months) / (1 - c.depositPct / 100 || 1),
+      gap: cf.total - deposit,
+      // after buying: the transport row is replaced by running costs and the car-fund saving stops
+      roomAfter: left + item('transport').amt + item('car').amt - own,
+    };
+
+    const fiBase = {
+      baseInvest: item('invest').amt, emergencyContrib: item('emergency').amt, emergencyTarget: s.emergencyTarget,
+      emergencyStart: s.emergencyStart, startPortfolio: s.startPortfolio, returnPct: s.returnPct,
+      inflationPct: s.inflation, swrPct: s.swr, annualSpend, investShare: s.investShare / 100,
+      netFor: g => sal(g).net,
+    };
+    const fi = {
+      annualSpend, target0: annualSpend / (s.swr / 100),
+      flat: fiPath({ ...fiBase, salaries: [s.raises[0]] }),
+      raises: fiPath({ ...fiBase, salaries: s.raises }),
+    };
+    return { item, sal, pay, net, total, left, saveTotal, inv: item('invest').amt, cf, cfFor, car, fi, fiBase };
+  }
+
+  const api = { PAYE_BANDS, paye, salary, fv, pmt, maxLoan, carFund, fiPath, monthlyRate, plan };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.Calc = api;
 })(this);
